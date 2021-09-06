@@ -36,6 +36,7 @@ def detect(weights='yolor_p6.pt',     # model.pt path(s)
            device='',                 # cuda device, i.e. 0 or 0,1,2,3 or cpu
            view_img=False,            # display results
            save_txt=False,            # save results to *.txt
+           save_conf=False,           # save confidences in --save-txt labels
            nosave=False,              # do not save images/videos
            classes=None,              # filter by class: --class 0, or --class 0 2 3
            agnostic_nms=False,        # class-agnostic NMS
@@ -133,8 +134,9 @@ def detect(weights='yolor_p6.pt',     # model.pt path(s)
                 for *xyxy, conf, cls in det:
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                         with open(txt_path + '.txt', 'a') as f:
-                            f.write(('%g ' * 5 + '\n') % (cls, *xywh))  # label format
+                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                     if save_img or view_img:  # Add bbox to image
                         label = '%s %.2f' % (names[int(cls)], conf)
@@ -185,6 +187,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
