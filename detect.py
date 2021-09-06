@@ -27,13 +27,30 @@ def load_classes(path):
         names = f.read().split('\n')
     return list(filter(None, names))  # filter removes empty strings (such as last line)
 
-def detect(save_img=False):
-    out, source, weights, view_img, save_txt, imgsz, cfg, names = \
-        opt.output, opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.cfg, opt.names
+def detect(weights='yolor_p6.pt',     # model.pt path(s)
+           source='inference/images', # file/dir, 0 for webcam
+           output='inference/output', # output folder
+           imgsz=1280,                # inference size (pixels)
+           conf_thres=0.4,            # object confidence threshold
+           iou_thres=0.5,             # IOU threshold for NMS
+           device='',                 # cuda device, i.e. 0 or 0,1,2,3 or cpu
+           view_img=False,            # display results
+           save_txt=False,            # save results to *.txt
+           classes=None,              # filter by class: --class 0, or --class 0 2 3
+           agnostic_nms=False,        # class-agnostic NMS
+           augment=False,             # augmented inference
+           update=False,              # update all models
+           cfg='cfg/yolor_p6.cfg',    # *.cfg path
+           names='data/coco.names',   # classes names file path
+    ):
+    save_img = not source.endswith('.txt')  # save inference images
     webcam = source == '0' or source.startswith('rtsp') or source.startswith('http') or source.endswith('.txt')
 
+    # TODO Refactor after parameter cleanup
+    out=output
+
     # Initialize
-    device = select_device(opt.device)
+    device = select_device(device)
     if os.path.exists(out):
         shutil.rmtree(out)  # delete output folder
     os.makedirs(out)  # make new output folder
@@ -62,7 +79,6 @@ def detect(save_img=False):
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz)
     else:
-        save_img = True
         dataset = LoadImages(source, img_size=imgsz, auto_size=64)
 
     # Get names and colors
@@ -82,10 +98,10 @@ def detect(save_img=False):
 
         # Inference
         t1 = time_synchronized()
-        pred = model(img, augment=opt.augment)[0]
+        pred = model(img, augment=augment)[0]
 
         # Apply NMS
-        pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
+        pred = non_max_suppression(pred, conf_thres, iou_thres, classes=classes, agnostic=agnostic_nms)
         t2 = time_synchronized()
 
         # Apply Classifier
@@ -151,7 +167,7 @@ def detect(save_img=False):
 
     if save_txt or save_img:
         print('Results saved to %s' % Path(out))
-        if platform == 'darwin' and not opt.update:  # MacOS
+        if platform == 'darwin' and not update:  # MacOS
             os.system('open ' + save_path)
 
     print('Done. (%.3fs)' % (time.time() - t0))
@@ -162,7 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights', nargs='+', type=str, default='yolor_p6.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
-    parser.add_argument('--img-size', type=int, default=1280, help='inference size (pixels)')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1280, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.4, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='IOU threshold for NMS')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
@@ -180,7 +196,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ['']:
-                detect()
+                detect(**vars(opt))
                 strip_optimizer(opt.weights)
         else:
-            detect()
+            detect(**vars(opt))
