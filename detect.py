@@ -36,6 +36,7 @@ def detect(weights='yolor_p6.pt',     # model.pt path(s)
            device='',                 # cuda device, i.e. 0 or 0,1,2,3 or cpu
            view_img=False,            # display results
            save_txt=False,            # save results to *.txt
+           nosave=False,              # do not save images/videos
            classes=None,              # filter by class: --class 0, or --class 0 2 3
            agnostic_nms=False,        # class-agnostic NMS
            augment=False,             # augmented inference
@@ -43,7 +44,7 @@ def detect(weights='yolor_p6.pt',     # model.pt path(s)
            cfg='cfg/yolor_p6.cfg',    # *.cfg path
            names='data/coco.names',   # classes names file path
     ):
-    save_img = not source.endswith('.txt')  # save inference images
+    save_img = not nosave and not source.endswith('.txt')  # save inference images
     webcam = source == '0' or source.startswith('rtsp') or source.startswith('http') or source.endswith('.txt')
 
     # TODO Refactor after parameter cleanup
@@ -184,6 +185,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
